@@ -12,12 +12,14 @@ import android.support.annotation.IntDef;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 import android.support.v4.view.ViewPager;
 
 import com.java.io.practise.R;
 import com.java.io.practise.Utils.DisplayUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,6 +49,9 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
     private int mCount;// indicator的数量
     private int mSelectedPosition;//选中的位置
 
+    private OnIndicatorSelectListener mListener;
+    private ViewPager mViewPager;
+
     public static final int NONE = 0;
     public static final int NUMBER = 1;
     public static final int LETTER = 2;
@@ -58,6 +63,10 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
     private class Indicator {
         float cx;
         float cy;
+    }
+
+    interface OnIndicatorSelectListener {
+        void onSelected(int position);
     }
 
     public CircleIndicatorView(Context context) {
@@ -91,6 +100,10 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
         mTextPaint.setDither(true);
         mTextPaint.setAntiAlias(true);
 
+        // 默认值
+        mIndicators = new ArrayList<>();
+
+        setupPaint();
     }
 
     private void setupPaint() {
@@ -192,6 +205,43 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float xPoint;
+        float yPoint;
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                xPoint = event.getX();
+                yPoint = event.getY();
+                handleActionDown(xPoint,yPoint);
+                break;
+        }
+        return super.onTouchEvent(event);
+    }
+
+    private void handleActionDown(float x, float y) {
+        for (int i = 0; i < mIndicators.size(); i++) {
+            Indicator indicator = mIndicators.get(i);
+            if (x < (indicator.cx + mRadius + mStrokWidth)
+                    && x >= (indicator.cx -(mRadius + mStrokWidth))
+                    && y >= (y-(indicator.cy + mStrokWidth))
+                    && y < (indicator.cy + mRadius + mStrokWidth)) {
+                if (mIsEnableClickSwitch) {
+                    mViewPager.setCurrentItem(i, false);
+                }
+
+                if (null != mListener) {
+                    mListener.onSelected(i);
+                }
+                break;
+            }
+        }
+    }
+
+    public void setOnIndicatorSelectListener(OnIndicatorSelectListener listener) {
+        mListener = listener;
+    }
+
+    @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
     }
@@ -203,12 +253,38 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
 
     @Override
     public void onPageSelected(int position) {
-
+        mSelectedPosition = position;
+        invalidate();
     }
 
     @Override
     public void onPageScrollStateChanged(int state) {
 
+    }
+
+    /**
+     * 与viewpager关联
+     * @param viewPager
+     */
+    public void setupWithViewPager(ViewPager viewPager) {
+        releaseViewPager();
+        if (null == viewPager) {
+            return;
+        }
+        mViewPager = viewPager;
+        mViewPager.addOnPageChangeListener(this);
+        int count = mViewPager.getAdapter().getCount();
+        setCount(count);
+    }
+
+    /**
+     * 重置viewpager
+     */
+    public void releaseViewPager() {
+        if (null != mViewPager) {
+            mViewPager.removeOnPageChangeListener(this);
+            mViewPager = null;
+        }
     }
 
     public void setCount(int count) {
