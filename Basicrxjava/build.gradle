@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+
+    defaultConfig {
+        applicationId "com.java.io.basicrxjava"
+        minSdkVersion 23
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile("com.android.support.test.espresso:espresso-core:$rootProject.espressoVersion", {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    // Support libraries
+    compile "com.android.support:appcompat-v7:$rootProject.supportLibraryVersion"
+    compile "com.android.support.constraint:constraint-layout:$rootProject.supportConstraintVersion"
+    compile "com.android.support:support-v4:$rootProject.supportLibraryVersion"
+    compile "com.android.support:design:$rootProject.supportLibraryVersion"
+    // Architecture components
+    compile "android.arch.lifecycle:runtime:$rootProject.architectureComponentsVersion"
+    compile "android.arch.lifecycle:extensions:$rootProject.architectureComponentsVersion"
+    annotationProcessor "android.arch.lifecycle:compiler:$rootProject.architectureComponentsVersion"
+    compile "android.arch.persistence.room:runtime:$rootProject.architectureComponentsVersion"
+    annotationProcessor "android.arch.persistence.room:compiler:$rootProject.architectureComponentsVersion"
+    compile "android.arch.persistence.room:rxjava2:$rootProject.architectureComponentsVersion"
+
+    // RxJava
+    compile "io.reactivex.rxjava2:rxandroid:$rootProject.rxandroidVersion"
+    compile "io.reactivex.rxjava2:rxjava:$rootProject.rxjavaVersion"
+    testCompile "junit:junit:$rootProject.junitVersion"
+}

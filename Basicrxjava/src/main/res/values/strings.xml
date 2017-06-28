@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">BasicRxJava</string>
+    <string name="update_user">Update User</string>
+</resources>
