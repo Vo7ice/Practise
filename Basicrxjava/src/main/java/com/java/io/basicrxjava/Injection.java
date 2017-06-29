@@ -14,7 +14,7 @@ import com.java.io.basicrxjava.ui.ViewModelFactory;
 public class Injection {
 
     public static UserDataSource provideUserDataSource(Context context) {
-        UserDatabase database = UserDatabase.getInstantce(context);
+        UserDatabase database = UserDatabase.getInstance(context);
         return new LocalUserDataSource(database.userDao());
     }
 

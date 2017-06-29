@@ -17,7 +17,7 @@ public abstract class UserDatabase extends RoomDatabase {
 
     public abstract UserDao userDao();
 
-    public static UserDatabase getInstantce(Context context) {
+    public static UserDatabase getInstance(Context context) {
         if (null == INSTANCE) {
             synchronized (UserDatabase.class) {
                 if (null == INSTANCE) {

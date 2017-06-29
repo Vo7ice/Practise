@@ -1,5 +1,6 @@
 package com.java.io.basicrxjava.persistence;
 
+import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Insert;
 import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
@@ -11,6 +12,7 @@ import io.reactivex.Flowable;
  * Data Access Object for the users table.
  */
 
+@Dao
 public interface UserDao {
 
     /**
@@ -29,7 +31,7 @@ public interface UserDao {
      * @param user the user to be inserted.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    Void insertUser(User user);
+    void insertUser(User user);
 
 
     /**
