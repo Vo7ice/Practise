@@ -118,7 +118,7 @@ public class CircleIndicatorView extends View implements ViewPager.OnPageChangeL
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.CircleIndicatorView);
         // dimension
         mRadius = (int) ta.getDimension(R.styleable.CircleIndicatorView_indicatorRadius, DisplayUtils.dpToPx(6));
-        mStrokWidth = (int) ta.getDimension(R.styleable.CircleIndicatorView_indicatorBorderwidth, DisplayUtils.dpToPx(2));
+        mStrokWidth = (int) ta.getDimension(R.styleable.CircleIndicatorView_indicatorBorderWidth, DisplayUtils.dpToPx(2));
         mSpace = (int) ta.getDimension(R.styleable.CircleIndicatorView_indicatorSpace, DisplayUtils.dpToPx(5));
 
         // color

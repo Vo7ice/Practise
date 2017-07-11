@@ -11,14 +11,12 @@ import android.widget.ImageView;
 
 import com.java.io.practise.view.CircleIndicatorView;
 
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
 
     private ViewPager mViewPager;
     private CircleIndicatorView mCircleIndicatorView, mCircleIndicatorView1,
             mCircleIndicatorView2, mCircleIndicatorView3;
-
+    private MyPagerAdapter mAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,19 +27,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void initView() {
         mViewPager = (ViewPager) findViewById(R.id.viewpager);
+        mAdapter = new MyPagerAdapter();
+        mViewPager.setAdapter(mAdapter);
+
         mCircleIndicatorView = (CircleIndicatorView) findViewById(R.id.indicator_view);
         mCircleIndicatorView1 = (CircleIndicatorView) findViewById(R.id.indicator_view1);
         mCircleIndicatorView2 = (CircleIndicatorView) findViewById(R.id.indicator_view2);
         mCircleIndicatorView3 = (CircleIndicatorView) findViewById(R.id.indicator_view3);
+
+        mCircleIndicatorView.setupWithViewPager(mViewPager);
+        mCircleIndicatorView1.setupWithViewPager(mViewPager);
+        mCircleIndicatorView2.setupWithViewPager(mViewPager);
+        mCircleIndicatorView3.setupWithViewPager(mViewPager);
     }
 
     private class MyPagerAdapter extends PagerAdapter {
 
-        private List<Integer> mResList;
+        private final int RES[] = new int[]{R.mipmap.ic_01, R.mipmap.ic_02, R.mipmap.ic_03, R.mipmap.ic_04};
+        private ImageView[] mImageViews = new ImageView[RES.length];
 
         @Override
         public int getCount() {
-            return mResList.size();
+            return RES.length;
         }
 
         @Override
@@ -51,22 +58,18 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            View view = LayoutInflater.from(container.getContext()).inflate(R.layout.view_pager_item,null);
+            View view = LayoutInflater.from(container.getContext()).inflate(R.layout.view_pager_item, null);
             ImageView image = (ImageView) view.findViewById(R.id.image_item);
-            image.setImageResource(mResList.get(position));
+            image.setImageResource(RES[position]);
+            mImageViews[position] = image;
             container.addView(image);
             return view;
         }
 
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
-            container.removeView((View) object);
+            container.removeView(mImageViews[position]);
         }
-
-        public void setData(List<Integer> reaList) {
-            mResList = reaList;
-        }
-
 
     }
 }

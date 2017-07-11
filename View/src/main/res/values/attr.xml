@@ -2,7 +2,7 @@
 <resources>
     <declare-styleable name="CircleIndicatorView">
         <attr name="indicatorRadius" format="dimension"/>
-        <attr name="indicatorBorderwidth" format="dimension"/>
+        <attr name="indicatorBorderWidth" format="dimension"/>
         <attr name="indicatorSpace" format="dimension"/>
         <attr name="indicatorTextColor" format="color"/>
         <attr name="indicatorColor" format="color"/>
