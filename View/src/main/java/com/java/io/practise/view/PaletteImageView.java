@@ -3,11 +3,14 @@ package com.java.io.practise.view;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
+import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.graphics.Palette;
@@ -18,6 +21,8 @@ import android.view.ViewTreeObserver;
 import com.java.io.practise.R;
 import com.java.io.practise.utils.DisplayUtils;
 
+import java.lang.ref.WeakReference;
+
 /**
  * Created by huguojin on 2017/7/11.
  */
@@ -25,7 +30,7 @@ import com.java.io.practise.utils.DisplayUtils;
 public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalLayoutListener {
 
     private static final String TAG = "PaletteImageView";
-    private float mRadius;
+    private int mRadius;
     private int mImgId;
     private int mPadding;
     private int mOffsetX;
@@ -44,6 +49,7 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
 
     private Bitmap mBitmap;
     private Bitmap mRealBitmap;
+    private Bitmap mRoundBitmap;
     private RectF mRectFShadow;
     private RectF mRoundRectF;
     private Palette mPalette;
@@ -51,6 +57,7 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
     private int mMainColor;
 
     private OnParseColorListener mListener;
+    private AsyncTask<Bitmap, Void, Palette> mAsyncTask;
 
     public void setListener(OnParseColorListener listener) {
         mListener = listener;
@@ -75,7 +82,7 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
 
     public void init(Context context, AttributeSet attrs) {
         TypedArray ta = context.obtainStyledAttributes(attrs, R.styleable.PaletteImageView);
-        mRadius = ta.getDimension(R.styleable.PaletteImageView_paletteRadius, DisplayUtils.dpToPx(0));
+        mRadius = (int) ta.getDimension(R.styleable.PaletteImageView_paletteRadius, DisplayUtils.dpToPx(0));
         mImgId = ta.getResourceId(R.styleable.PaletteImageView_paletteSrc, 0);
         mPadding = (int) ta.getDimension(R.styleable.PaletteImageView_palettePadding, DisplayUtils.dpToPx(DEFAULT_PADDING));
         mOffsetX = (int) ta.getDimension(R.styleable.PaletteImageView_paletteOffsetX, DisplayUtils.dpToPx(DEFAULT_OFFSET));
@@ -137,7 +144,11 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        zipBitmap(mImgId, mBitmap, mMeasureHeightMode);
+        mRectFShadow = new RectF(mPadding, mPadding, getWidth() - mPadding, getHeight() - mPadding);
         mRoundRectF = new RectF(0, 0, getWidth() - mPadding * 2, getHeight() - mPadding * 2);
+
+        mRoundBitmap = createRoundConerImage(mRealBitmap, mRadius);
     }
 
     @Override
@@ -147,7 +158,11 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
 
     @Override
     protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
+        if (mRealBitmap != null) {
+            canvas.drawRoundRect(mRectFShadow, mRadius, mRadius, mShadowPaint);
+            canvas.drawBitmap(mRoundBitmap, mPadding, mPadding, null);
+            if (mMainColor != -1) mAsyncTask.cancel(true);
+        }
     }
 
     private void reDraw() {
@@ -169,7 +184,54 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
         canvas.drawBitmap(src, 0, 0, mRoundPaint);
         mRoundPaint.setXfermode(null);
         return dst;
+    }
 
+    private void zipBitmap(int imgId, Bitmap bitmap, int heightMode) {
+        WeakReference<Matrix> matrixWeakReference = new WeakReference<Matrix>(new Matrix());
+        if (matrixWeakReference.get() == null) return;
+        Matrix matrix = matrixWeakReference.get();
+        int reqWidth = getWidth() - mPadding - mPadding;
+        int reqHeight = getHeight() - mPadding * 2;
+        if (reqWidth < 0 || reqHeight < 0) return;
+        int rawWidth = 0;
+        int rawHeight = 0;
+        if (imgId != 0 && bitmap != null) {
+            WeakReference<BitmapFactory.Options> optionsWeakReference = new WeakReference<BitmapFactory.Options>(new BitmapFactory.Options());
+            if (optionsWeakReference.get() == null) return;
+            BitmapFactory.Options options = optionsWeakReference.get();
+            BitmapFactory.decodeResource(getResources(), imgId, options);
+            options.inJustDecodeBounds = true;
+            rawHeight = options.outHeight;
+            rawWidth = options.outWidth;
+            options.inSampleSize = caculateInSampleSize(rawWidth, rawHeight, reqWidth, reqHeight);
+            options.inJustDecodeBounds = false;
+            bitmap = BitmapFactory.decodeResource(getResources(), imgId, options);
+        } else if (imgId == 0 && bitmap != null) {
+            rawWidth = bitmap.getWidth();
+            rawHeight = bitmap.getHeight();
+            float scale = rawHeight * 1.0f / rawWidth;
+            mRealBitmap = Bitmap.createScaledBitmap(bitmap, reqWidth, (int) (reqWidth * scale), true);
+            initShadow(mRealBitmap);
+            return;
+        }
+        if (heightMode == 0) {
+            float scale = rawHeight * 1.0f / rawWidth;
+            mRealBitmap = Bitmap.createScaledBitmap(bitmap, reqWidth, (int) (reqHeight * scale), true);
+        } else {
+            int dx = 0;
+            int dy = 0;
+            int small = Math.min(rawHeight, rawWidth);
+            int big = Math.max(rawHeight, rawWidth);
+            float scale = big * 1.0f / small;
+            matrix.setScale(scale, scale);
+            if (rawHeight > rawWidth) {
+                dy = (rawHeight - rawWidth) / 2;
+            } else {
+                dx = (rawWidth - rawHeight) / 2;
+            }
+            mRealBitmap = Bitmap.createBitmap(bitmap, dx, dy, small, small, matrix, true);
+        }
+        initShadow(mRealBitmap);
     }
 
     public void setShadowColor(int color) {
@@ -182,14 +244,49 @@ public class PaletteImageView extends View implements ViewTreeObserver.OnGlobalL
         reDraw();
     }
 
-    public void setRadius(float radius) {
-        mRadius = radius;
+    public void setPaletteShadowOffset(int offsetX, int offsetY) {
+        if (mOffsetX > mPadding) {
+            this.mOffsetX = mPadding;
+        } else {
+            this.mOffsetX = offsetX;
+        }
+
+        if (mOffsetY > mPadding) {
+            this.mOffsetY = mPadding;
+        } else {
+            this.mOffsetY = offsetY;
+        }
+
         reDraw();
+    }
+
+    public void setRadius(int radius) {
+        mRadius = radius;
+        mRoundBitmap = createRoundConerImage(mRealBitmap, mRadius);
+        invalidate();
     }
 
     public void setOffsetY(int offsetY) {
         mOffsetY = offsetY;
         reDraw();
+    }
+
+    private int caculateInSampleSize(int rawWidth, int rawHeight, int reqWidth, int reqHeight) {
+        int inSampleSize = 1;
+        if (rawHeight > reqHeight || rawWidth > reqWidth) {
+            int halfHeight = rawHeight / 2;
+            int halfWidth = rawWidth / 2;
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
+
+    private void initShadow(Bitmap bitmap) {
+        if (bitmap != null) {
+            mAsyncTask = Palette.from(bitmap).generate(mPaletteAsyncListener);
+        }
     }
 
     private Palette.PaletteAsyncListener mPaletteAsyncListener = new Palette.PaletteAsyncListener() {
